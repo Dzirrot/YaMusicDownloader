@@ -1,0 +1,2 @@
+mutagen==1.43.0
+yandex-music==0.0.16
