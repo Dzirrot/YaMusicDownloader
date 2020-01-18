@@ -47,7 +47,7 @@ if __name__ == '__main__':
 
             track_path = os.path.normpath(os.path.join(
                 strip_bad_symbols(track.artists[0]['name']),
-                strip_bad_symbols(track.artists[0]['title'])
+                strip_bad_symbols(track.albums[0]['title'])
             ))
 
             os.makedirs(track_path, exist_ok=True)
