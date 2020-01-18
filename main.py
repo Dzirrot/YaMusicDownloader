@@ -17,16 +17,13 @@ DELIMITER = '/'
 
 
 def cut_bad_symbols(text: str) -> str:
-    result = re.sub(r"[\"#%&{}/\<>*?$!`“:+=|\[\]]", "", text)
+    result = re.sub('[^\w_.)( -]', '', text)
     print(result)
     return result
 
 
 if __name__ == '__main__':
-    if not FOLDER:
-        folder = "music"
-    else:
-        folder = os.path.normpath(FOLDER)
+    folder = os.path.normpath(FOLDER)
 
     os.makedirs(folder, exist_ok=True)
     os.chdir(folder)
@@ -48,26 +45,32 @@ if __name__ == '__main__':
             if not track.available:
                 continue
             track_path = cut_bad_symbols(os.path.normpath(f"{track.artists[0]['name']}/{track.albums[0]['title']}"))
-            if 'The Neighbourhood' in track_path:
-                x = 5
+
             os.makedirs(track_path, exist_ok=True)
             os.chdir(track_path)
 
+            file_name = cut_bad_symbols(f'{track.title}')
+            used_codec = None
             for info in sorted(track.get_download_info(), key=lambda x: x['bitrate_in_kbps'], reverse=True):
                 codec = info['codec']
                 bitrate = info['bitrate_in_kbps']
-                file_name = cut_bad_symbols(f'{track.title}')
                 try:
                     track.download(
                         file_name + f'.{codec}',
                         codec=codec,
                         bitrate_in_kbps=bitrate
                     )
+                    used_codec = codec
                     break
                 except (YandexMusicError, TimeoutError):
                     continue
+
+            if not used_codec:
+                print(f'Track `{track.title}` was not downloaded')
+                continue
+
             track.download_cover(file_name + '.jpg', size='300x300')
-            file = File(file_name + f'.{codec}')
+            file = File(file_name + f'.{used_codec}')
             file.update({
                 # Title
                 'TIT2': TIT2(encoding=3, text=track.title),
@@ -82,7 +85,7 @@ if __name__ == '__main__':
             })
             lyrics = client.track_supplement(track.track_id).lyrics
             if lyrics:
-                # Song words
+                # Song lyrics
                 file.tags.add(USLT(encoding=3, text=lyrics.full_lyrics))
 
             file.save()
