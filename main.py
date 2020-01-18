@@ -10,19 +10,19 @@ from yandex_music.exceptions import YandexMusicError
 FOLDER = "music"
 
 # Авторизационные данные от Я аккаунта.
-LOGIN = ''
-PASSWORD = ''
+LOGIN = ""
+PASSWORD = ""
 
-DELIMITER = '/'
+DELIMITER = "/"
 
 
 def strip_bad_symbols(text: str) -> str:
-    result = re.sub(r"[^\w_.)( -]", '', text)
+    result = re.sub(r"[^\w_.)( -]", "", text)
     print(f"Renamed `{text}` -> `{result}`")
     return result
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     folder = os.path.normpath(FOLDER)
 
     os.makedirs(folder, exist_ok=True)
@@ -70,10 +70,10 @@ if __name__ == '__main__':
                     continue
 
             if not used_codec:
-                print(f'Track `{track.title}` was not downloaded')
+                print(f"Track `{track.title}` was not downloaded")
                 continue
 
-            track.download_cover(file_name + '.jpg', size='300x300')
+            track.download_cover(file_name + ".jpg", size="300x300")
             file = File(f'{file_name}.{used_codec}')
             file.update({
                 # Title
@@ -85,7 +85,7 @@ if __name__ == '__main__':
                 # Year
                 'TDRC': TDRC(encoding=3, text=str(track.albums[0]['year'])),
                 # Picture
-                'APIC': APIC(encoding=3, text=file_name + '.jpg', data=open(file_name + '.jpg', 'rb').read())
+                'APIC': APIC(encoding=3, text=file_name + ".jpg", data=open(file_name + ".jpg", 'rb').read())
             })
             lyrics = client.track_supplement(track.track_id).lyrics
             if lyrics:
