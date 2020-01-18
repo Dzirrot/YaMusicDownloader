@@ -16,9 +16,9 @@ PASSWORD = ''
 DELIMITER = '/'
 
 
-def cut_bad_symbols(text: str) -> str:
-    result = re.sub('[^\w_.)( -]', '', text)
-    print(result)
+def strip_bad_symbols(text: str) -> str:
+    result = re.sub(r"[^\w_.)( -]", '', text)
+    print(f"Renamed `{text}` -> `{result}`")
     return result
 
 
@@ -44,19 +44,24 @@ if __name__ == '__main__':
             track = short_track.track
             if not track.available:
                 continue
-            track_path = cut_bad_symbols(os.path.normpath(f"{track.artists[0]['name']}/{track.albums[0]['title']}"))
+
+            track_path = os.path.normpath(os.path.join(
+                strip_bad_symbols(track.artists[0]['name']),
+                strip_bad_symbols(track.artists[0]['title'])
+            ))
+
 
             os.makedirs(track_path, exist_ok=True)
             os.chdir(track_path)
 
-            file_name = cut_bad_symbols(f'{track.title}')
+            file_name = strip_bad_symbols(f'{track.title}')
             used_codec = None
             for info in sorted(track.get_download_info(), key=lambda x: x['bitrate_in_kbps'], reverse=True):
                 codec = info['codec']
                 bitrate = info['bitrate_in_kbps']
                 try:
                     track.download(
-                        file_name + f'.{codec}',
+                        f'{file_name}.{codec}',
                         codec=codec,
                         bitrate_in_kbps=bitrate
                     )
@@ -70,7 +75,7 @@ if __name__ == '__main__':
                 continue
 
             track.download_cover(file_name + '.jpg', size='300x300')
-            file = File(file_name + f'.{used_codec}')
+            file = File(f'{file_name}.{used_codec}')
             file.update({
                 # Title
                 'TIT2': TIT2(encoding=3, text=track.title),
