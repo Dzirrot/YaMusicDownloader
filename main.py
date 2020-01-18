@@ -18,7 +18,6 @@ DELIMITER = "/"
 
 def strip_bad_symbols(text: str) -> str:
     result = re.sub(r"[^\w_.)( -]", "", text)
-    print(f"Renamed `{text}` -> `{result}`")
     return result
 
 
@@ -42,7 +41,9 @@ if __name__ == "__main__":
         shorted_tracks = client.users_playlists(kind=playlist.kind, user_id=playlist.uid)[0].tracks
         for short_track in shorted_tracks:
             track = short_track.track
+            print(f"Downloading `{track.artists[0]['name']} - {track.title}`", end="... ")
             if not track.available:
+                print("not available")
                 continue
 
             track_path = os.path.normpath(os.path.join(
@@ -70,7 +71,7 @@ if __name__ == "__main__":
                     continue
 
             if not used_codec:
-                print(f"Track `{track.title}` was not downloaded")
+                print("unknown downloading error")
                 continue
 
             track.download_cover(file_name + ".jpg", size="300x300")
@@ -94,3 +95,4 @@ if __name__ == "__main__":
 
             file.save()
             os.chdir(pwd)
+            print("done")
