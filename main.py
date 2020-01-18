@@ -3,7 +3,7 @@ import re
 
 from mutagen import File
 from mutagen.id3 import TIT2, TPE1, TALB, APIC, TDRC, USLT
-from yandex_music import *
+from yandex_music import Client
 from yandex_music.exceptions import YandexMusicError
 
 # Задай переменную, куда будут выкачиваться музыкальные файлы.
@@ -49,7 +49,6 @@ if __name__ == '__main__':
                 strip_bad_symbols(track.artists[0]['name']),
                 strip_bad_symbols(track.artists[0]['title'])
             ))
-
 
             os.makedirs(track_path, exist_ok=True)
             os.chdir(track_path)
