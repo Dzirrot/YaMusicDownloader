@@ -28,10 +28,7 @@ if __name__ == '__main__':
     else:
         folder = os.path.normpath(FOLDER)
 
-    try:
-        os.makedirs(folder)
-    except FileExistsError:
-        pass
+    os.makedirs(folder, exist_ok=True)
     os.chdir(folder)
     pwd = os.getcwd()
 
@@ -53,12 +50,8 @@ if __name__ == '__main__':
             track_path = cut_bad_symbols(os.path.normpath(f"{track.artists[0]['name']}/{track.albums[0]['title']}"))
             if 'The Neighbourhood' in track_path:
                 x = 5
-            try:
-                os.makedirs(track_path)
-            except FileExistsError:
-                pass
-            finally:
-                os.chdir(track_path)
+            os.makedirs(track_path, exist_ok=True)
+            os.chdir(track_path)
 
             for info in sorted(track.get_download_info(), key=lambda x: x['bitrate_in_kbps'], reverse=True):
                 codec = info['codec']
