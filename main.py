@@ -3,35 +3,28 @@ import re
 
 from mutagen import File
 from mutagen.id3 import TIT2, TPE1, TALB, APIC, TDRC, USLT
-from yandex_music import *
+from yandex_music import Client
 from yandex_music.exceptions import YandexMusicError
 
 # Задай переменную, куда будут выкачиваться музыкальные файлы.
 FOLDER = "music"
 
 # Авторизационные данные от Я аккаунта.
-LOGIN = ''
-PASSWORD = ''
+LOGIN = ""
+PASSWORD = ""
 
-DELIMITER = '/'
+DELIMITER = "/"
 
 
-def cut_bad_symbols(text: str) -> str:
-    result = re.sub(r"[\"#%&{}/\<>*?$!`“:+=|\[\]]", "", text)
-    print(result)
+def strip_bad_symbols(text: str) -> str:
+    result = re.sub(r"[^\w_.)( -]", "", text)
     return result
 
 
-if __name__ == '__main__':
-    if not FOLDER:
-        folder = "music"
-    else:
-        folder = os.path.normpath(FOLDER)
+if __name__ == "__main__":
+    folder = os.path.normpath(FOLDER)
 
-    try:
-        os.makedirs(folder)
-    except FileExistsError:
-        pass
+    os.makedirs(folder, exist_ok=True)
     os.chdir(folder)
     pwd = os.getcwd()
 
@@ -48,33 +41,41 @@ if __name__ == '__main__':
         shorted_tracks = client.users_playlists(kind=playlist.kind, user_id=playlist.uid)[0].tracks
         for short_track in shorted_tracks:
             track = short_track.track
+            print(f"Downloading `{track.artists[0]['name']} - {track.title}`", end="... ")
             if not track.available:
+                print("not available")
                 continue
-            track_path = cut_bad_symbols(os.path.normpath(f"{track.artists[0]['name']}/{track.albums[0]['title']}"))
-            if 'The Neighbourhood' in track_path:
-                x = 5
-            try:
-                os.makedirs(track_path)
-            except FileExistsError:
-                pass
-            finally:
-                os.chdir(track_path)
 
+            track_path = os.path.normpath(os.path.join(
+                strip_bad_symbols(track.artists[0]['name']),
+                strip_bad_symbols(track.albums[0]['title'])
+            ))
+
+            os.makedirs(track_path, exist_ok=True)
+            os.chdir(track_path)
+
+            file_name = strip_bad_symbols(f'{track.title}')
+            used_codec = None
             for info in sorted(track.get_download_info(), key=lambda x: x['bitrate_in_kbps'], reverse=True):
                 codec = info['codec']
                 bitrate = info['bitrate_in_kbps']
-                file_name = cut_bad_symbols(f'{track.title}')
                 try:
                     track.download(
-                        file_name + f'.{codec}',
+                        f'{file_name}.{codec}',
                         codec=codec,
                         bitrate_in_kbps=bitrate
                     )
+                    used_codec = codec
                     break
                 except (YandexMusicError, TimeoutError):
                     continue
-            track.download_cover(file_name + '.jpg', size='300x300')
-            file = File(file_name + f'.{codec}')
+
+            if not used_codec:
+                print("unknown downloading error")
+                continue
+
+            track.download_cover(file_name + ".jpg", size="300x300")
+            file = File(f'{file_name}.{used_codec}')
             file.update({
                 # Title
                 'TIT2': TIT2(encoding=3, text=track.title),
@@ -85,12 +86,13 @@ if __name__ == '__main__':
                 # Year
                 'TDRC': TDRC(encoding=3, text=str(track.albums[0]['year'])),
                 # Picture
-                'APIC': APIC(encoding=3, text=file_name + '.jpg', data=open(file_name + '.jpg', 'rb').read())
+                'APIC': APIC(encoding=3, text=file_name + ".jpg", data=open(file_name + ".jpg", 'rb').read())
             })
             lyrics = client.track_supplement(track.track_id).lyrics
             if lyrics:
-                # Song words
+                # Song lyrics
                 file.tags.add(USLT(encoding=3, text=lyrics.full_lyrics))
 
             file.save()
             os.chdir(pwd)
+            print("done")
