@@ -20,7 +20,7 @@ def strip_bad_symbols(text: str) -> str:
     return result
 
 
-def download_playlist(playlist: Playlist):
+def download_playlist(playlist: Playlist, force_redownload=False):
     for short_track in playlist.tracks:
         track = short_track.track
         print(f"Downloading `{track.artists[0]['name']} - {track.title}`", end="... ")
@@ -41,9 +41,16 @@ def download_playlist(playlist: Playlist):
         for info in sorted(track.get_download_info(), key=lambda x: x['bitrate_in_kbps'], reverse=True):
             codec = info['codec']
             bitrate = info['bitrate_in_kbps']
+            full_file_name = f'{file_name}.{codec}'
+            # file is not created 'til all bytes of it recieved,
+            # so we can check if track was already downloaded
+            # by just checking its existence on disk
+            if os.path.exists(full_file_name) and not force_redownload:
+                used_codec = codec # to prevent wrong `unknown downloading error` message
+                break
             try:
                 track.download(
-                    f'{file_name}.{codec}',
+                    full_file_name,
                     codec=codec,
                     bitrate_in_kbps=bitrate
                 )
@@ -56,7 +63,8 @@ def download_playlist(playlist: Playlist):
             print("unknown downloading error")
             continue
 
-        track.download_cover(file_name + ".jpg", size="300x300")
+        cover_filename = file_name + ".jpg"
+        track.download_cover(cover_filename, size="300x300")
         file = File(f'{file_name}.{used_codec}')
         file.update({
             # Title
@@ -68,7 +76,7 @@ def download_playlist(playlist: Playlist):
             # Year
             'TDRC': TDRC(encoding=3, text=str(track.albums[0]['year'])),
             # Picture
-            'APIC': APIC(encoding=3, text=file_name + ".jpg", data=open(file_name + ".jpg", 'rb').read())
+            'APIC': APIC(encoding=3, text=cover_filename, data=open(cover_filename, 'rb').read())
         })
         lyrics = client.track_supplement(track.track_id).lyrics
         if lyrics:
